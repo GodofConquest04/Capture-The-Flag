@@ -1,21 +1,21 @@
 const express = require('express');
 const mysql = require('mysql2');
+const { exec } = require('child_process');
 const path = require('path');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const fs = require('fs');
-
 const supportFile = path.join(__dirname, 'messages.json');
 const flagFile = path.join(__dirname, 'flag.txt');
 const JWT_SECRET = 'S3lfm@de_N1nj@_s3cr3t_k3y';
 const FLAG = 'SelfmadeNinja{X$$_f1@g_thr0ugh_cH@t}';
 const PLACEHOLDER = 'execute_xss';
-
+const COMMAND_FLAG = 'SelfmadeNinja{C0mm@nd_1nj3ct10n_f1@g}';
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public'))); // serve static files
+app.use(express.static(path.join(__dirname, 'public')));
 
 const db = mysql.createConnection({
   host: process.env.DB_HOST || 'localhost',
@@ -139,5 +139,27 @@ app.get('/dashboard/flag', (req, res) => {
   });
 });
 
+
+app.get('/lookup', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'lookup.html'));
+});
+
+app.post('/lookup', (req, res) => {
+  const { host } = req.body;
+  if (!host) return res.send('Please provide a host');
+
+  if (host.includes(';') || host.includes('&') || host.includes('|')) {
+    fs.writeFileSync(flagFile, FLAG);
+    return res.send(`<pre>${COMMAND_FLAG}</pre><a href="/lookup">Back</a>`);
+  }
+
+  exec(`ping -c 4 ${host}`, (err, stdout, stderr) => {
+    let output;
+    if (err) output = stderr || err.message;
+    else output = stdout;
+
+    res.send(`<pre>${output}</pre><a href="/lookup">Back</a>`);
+  });
+});
 const PORT = 3000;
 app.listen(PORT, () => console.log(`App listening on port ${PORT}`));

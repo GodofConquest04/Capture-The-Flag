@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ping Lookup</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #ddd;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    h2 {
+      color: #f0a500;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    form {
+      max-width: 600px;
+      margin: 0 auto 20px;
+      display: flex;
+      gap: 10px;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background: #1e1e1e;
+      color: #ddd;
+    }
+    button {
+      padding: 10px 16px;
+      background: #4a90e2;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #3a78cc;
+    }
+    pre {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #1e1e1e;
+      padding: 15px;
+      border-radius: 6px;
+      box-shadow: 0 0 8px rgba(240,165,0,0.4);
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    a {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      color: #4a90e2;
+      text-decoration: none;
+    }
+    a:hover {
+      color: #3a78cc;
+    }
+  </style>
+</head>
+<body>
+  <h2>Ping Lookup</h2>
+  <form action="/lookup" method="POST">
+    <input type="text" name="host" placeholder="Enter domain or IP" required />
+    <button type="submit">Ping</button>
+  </form>
+</body>
+</html>
