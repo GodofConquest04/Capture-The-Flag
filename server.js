@@ -12,6 +12,7 @@ const JWT_SECRET = 'S3lfm@de_N1nj@_s3cr3t_k3y';
 const FLAG = 'SelfmadeNinja{X$$_f1@g_thr0ugh_cH@t}';
 const PLACEHOLDER = 'execute_xss';
 const COMMAND_FLAG = 'SelfmadeNinja{C0mm@nd_1nj3ct10n_f1@g}';
+const PROFILE_FLAG = 'SelfmadeNinja{1D0R_fl@g_thr0ugh_@dm1n}';
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -160,6 +161,43 @@ app.post('/lookup', (req, res) => {
 
     res.send(`<pre>${output}</pre><a href="/lookup">Back</a>`);
   });
+});
+
+app.get('/profile.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'profile.html'));
+});
+
+app.get('/profile', (req, res) => {
+  if (!req.query.username) {
+    if (req.user && req.user.username) {
+      return res.redirect(`/profile?username=${req.user.username}`);
+    } else {
+      return res.send('User not found');
+    }
+  }
+
+  const requestedUser = req.query.username;
+
+  db.query(
+    'SELECT username FROM users WHERE username = ?',
+    [requestedUser],
+    (err, results) => {
+      if (err) return res.status(500).send('Server error');
+      if (!results || results.length === 0) return res.send('User not found');
+
+      const user = results[0];
+      let html = fs.readFileSync(path.join(__dirname, 'public', 'profile.html'), 'utf8');
+      html = html.replace('%%USERNAME%%', user.username);
+
+      if (user.username === 'admin') {
+        html = html.replace('%%FLAG%%', `<div class="flag">Flag: ${PROFILE_FLAG}</div>`);
+      } else {
+        html = html.replace('%%FLAG%%', '');
+      }
+
+      res.send(html);
+    }
+  );
 });
 const PORT = 3000;
 app.listen(PORT, () => console.log(`App listening on port ${PORT}`));
