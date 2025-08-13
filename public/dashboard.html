@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>User Dashboard</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #ddd;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    h2 {
+      color: #f0a500;
+      margin-bottom: 24px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 10px 16px;
+      background: #4a90e2;
+      color: white;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 16px;
+      margin: 8px;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background: #3a78cc;
+    }
+    #flag {
+      margin-top: 20px;
+      font-weight: bold;
+      color: #f0a500;
+    }
+  </style>
+</head>
+<body>
+  <h2 id="welcomeText">Welcome</h2>
+  <div id="buttons">
+    <a href="/chat" class="btn">All chats</a>
+    <a href="/logout" class="btn">Logout</a>
+  </div>
+  <div id="flag"></div>
+
+  <script>
+    async function loadUsername() {
+      const res = await fetch('/dashboard/user');
+      const data = await res.json();
+      document.getElementById("welcomeText").textContent = `Welcome ${data.username}`;
+
+      if (data.username === 'admin') {
+        const btn = document.createElement('button');
+        btn.id = "showFlagBtn";
+        btn.textContent = "Show Flag";
+        btn.className = "btn";
+        document.getElementById("buttons").appendChild(btn);
+
+        btn.addEventListener('click', async () => {
+          const flagRes = await fetch('/dashboard/flag');
+          if (flagRes.ok) {
+            const flagData = await flagRes.json();
+            document.getElementById("flag").textContent = flagData.flag;
+          } else {
+            document.getElementById("flag").textContent = 'Access denied';
+          }
+        });
+      }
+    }
+
+    loadUsername();
+  </script>
+</body>
+</html>

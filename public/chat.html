@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Public Chat Room</title>
+  <style>
+    body { background-color: #121212; color: #ddd; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; }
+    h2 { color: #f0a500; text-align: center; margin-bottom: 24px; }
+    .chat-container { max-width: 800px; margin: 0 auto; }
+    .message { background: #1e1e1e; border-radius: 8px; padding: 10px; margin-bottom: 10px; box-shadow: 0 0 8px rgba(240, 165, 0, 0.4); word-wrap: break-word; }
+    .username { font-weight: bold; color: #f0a500; }
+    form { max-width: 800px; margin: 20px auto 0; display: flex; gap: 10px; }
+    input[type="text"] { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #1e1e1e; color: #ddd; }
+    button { padding: 10px 16px; background: #4a90e2; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #3a78cc; }
+  </style>
+</head>
+<body>
+  <h2>Public Chat Room</h2>
+  <div class="chat-container" id="messages"></div>
+
+  <form id="chatForm">
+    <input type="text" name="message" placeholder="Type your message..." required />
+    <button type="submit">Send</button>
+  </form>
+
+  <script>
+    let seenMessages = new Set();
+
+    function executeScriptsIn(element) {
+      const scripts = element.querySelectorAll('script');
+      scripts.forEach(old => {
+        const s = document.createElement('script');
+        s.text = old.text;
+        old.parentNode.replaceChild(s, old);
+      });
+    }
+
+    async function loadMessages() {
+      const res = await fetch('/chat/messages', { credentials: 'include' });
+      const data = await res.json();
+      const container = document.getElementById('messages');
+
+      data.forEach(msg => {
+        const key = `${msg.username}|${msg.timestamp}|${msg.message}`;
+        if (!seenMessages.has(key)) {
+          seenMessages.add(key);
+          const wrapper = document.createElement('div');
+          wrapper.className = 'message';
+          wrapper.innerHTML = `<span class="username">${msg.username}:</span> ${msg.message}`;
+          container.appendChild(wrapper);
+          executeScriptsIn(wrapper);
+        }
+      });
+      container.scrollTop = container.scrollHeight;
+    }
+
+    document.getElementById('chatForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      await fetch('/chat', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(formData)
+      });
+      e.target.reset();
+      setTimeout(loadMessages, 50); // small delay to ensure message shows
+    });
+
+    loadMessages();
+    setInterval(loadMessages, 2000);
+  </script>
+</body>
+</html>
