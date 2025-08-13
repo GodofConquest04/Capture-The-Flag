@@ -13,6 +13,8 @@ const FLAG = 'SelfmadeNinja{X$$_f1@g_thr0ugh_cH@t}';
 const PLACEHOLDER = 'execute_xss';
 const COMMAND_FLAG = 'SelfmadeNinja{C0mm@nd_1nj3ct10n_f1@g}';
 const PROFILE_FLAG = 'SelfmadeNinja{1D0R_fl@g_thr0ugh_@dm1n}';
+const multer = require('multer');
+const FLAG_FILEUPLOAD = 'SelfmadeNinja{1n$3cur3_f1l3_Upl0@d}';
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -45,7 +47,24 @@ function authenticateToken(req, res, next) {
 }
 
 app.use(authenticateToken);
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => cb(null, file.originalname)
+});
+
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ext.endsWith('.jpg') || ext.endsWith('.png')) {
+      return cb(null, true);
+    }
+    cb(new Error('Only jpg and png allowed'));
+  }
+});
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.post('/login', (req, res) => {
@@ -56,7 +75,7 @@ app.post('/login', (req, res) => {
     if (err) return res.status(500).send('Server error');
     if (!results || results.length === 0) return res.send('<h3>Invalid credentials</h3>');
     const user = results[0];
-    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ id: user.id, username: user.username, flag: 'SelfmadeNinja{JWT_t0k3n_f1@g}' }, JWT_SECRET, { expiresIn: '1h' });
     res.cookie('token', token, { httpOnly: true, sameSite: 'lax', secure: false, maxAge: 3600000 });
     return res.redirect('/dashboard');
   });
@@ -107,15 +126,15 @@ app.post('/chat', (req, res) => {
   fs.writeFileSync(supportFile, JSON.stringify(messages, null, 2));
 
   if (message.includes('<script>') || message.includes('onerror') || message.includes('onmouseover')) {
-    fs.writeFileSync(flagFile, FLAG);
+    req.app.locals.xssExecuted = true;
   }
 
   res.sendStatus(200);
 });
 
 app.get('/flag.txt', (req, res) => {
-  if (fs.existsSync(flagFile)) {
-    res.sendFile(flagFile);
+  if (req.app.locals.xssExecuted) {
+    res.send(FLAG);
   } else {
     res.send(PLACEHOLDER);
   }
@@ -147,19 +166,22 @@ app.get('/lookup', (req, res) => {
 
 app.post('/lookup', (req, res) => {
   const { host } = req.body;
-  if (!host) return res.send('Please provide a host');
+  if (!host) return res.sendFile(path.join(__dirname, 'public', 'lookup.html'));
+
+  const lookupHtml = fs.readFileSync(path.join(__dirname, 'public', 'lookup.html'), 'utf8');
 
   if (host.includes(';') || host.includes('&') || host.includes('|')) {
-    fs.writeFileSync(flagFile, FLAG);
-    return res.send(`<pre>${COMMAND_FLAG}</pre><a href="/lookup">Back</a>`);
+    fs.writeFileSync(flagFile, COMMAND_FLAG);
+    return res.send(
+      lookupHtml.replace('%%OUTPUT%%', `<pre>${COMMAND_FLAG}</pre><a href="/lookup">Back</a>`)
+    );
   }
 
   exec(`ping -c 4 ${host}`, (err, stdout, stderr) => {
-    let output;
-    if (err) output = stderr || err.message;
-    else output = stdout;
-
-    res.send(`<pre>${output}</pre><a href="/lookup">Back</a>`);
+    const output = err ? stderr || err.message : stdout;
+    res.send(
+      lookupHtml.replace('%%OUTPUT%%', `<pre>${output}</pre><a href="/lookup">Back</a>`)
+    );
   });
 });
 
@@ -198,6 +220,21 @@ app.get('/profile', (req, res) => {
       res.send(html);
     }
   );
+});
+
+app.get('/upload', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'upload.html'));
+});
+
+app.post('/upload', upload.single('file'), (req, res) => {
+  if (!req.file) return res.send('Upload failed');
+
+  const filename = req.file.originalname.toLowerCase();
+  if (filename.includes('.php')) {
+    return res.send(`Flag: ${FLAG_FILEUPLOAD}`);
+  }
+
+  res.send(`File uploaded: ${req.file.originalname}`);
 });
 const PORT = 3000;
 app.listen(PORT, () => console.log(`App listening on port ${PORT}`));
